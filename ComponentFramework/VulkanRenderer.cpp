@@ -565,8 +565,8 @@ void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* f
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)swapChainExtent.width;
-    viewport.height = (float)swapChainExtent.height;
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = static_cast<float>(swapChainExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -619,10 +619,17 @@ void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* f
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
+    VkPushConstantRange pushConstant{};
+    pushConstant.offset = 0;
+    pushConstant.size = sizeof(ModelMatrixPushConst);
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -1147,6 +1154,7 @@ uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFla
 }
 
 void VulkanRenderer::createCommandBuffers() {
+
     commandBuffers.resize(swapChainFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -1158,6 +1166,9 @@ void VulkanRenderer::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+}
+
+void VulkanRenderer::recordCommandBuffer() {
 
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo{};
@@ -1193,6 +1204,8 @@ void VulkanRenderer::createCommandBuffers() {
 
         vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
+        vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelMatrixPushConst), &modelMatrixPushConst);
+
         vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
@@ -1223,6 +1236,12 @@ void VulkanRenderer::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+}
+
+void VulkanRenderer::SetModelMatrixPush(const Matrix4& modelMatrix) {
+    modelMatrixPushConst.modelMatrix = modelMatrix;
+    modelMatrixPushConst.normalMatrix = MMath::transpose(MMath::inverse(modelMatrix));
+    recordCommandBuffer();
 }
 
 void VulkanRenderer::SetUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model) {

@@ -65,6 +65,7 @@ void Scene0::Render() const {
 		VulkanRenderer* vRenderer;
 		vRenderer = dynamic_cast<VulkanRenderer*>(renderer);
 		vRenderer->SetUBO(camera->GetProjectionMatrix(), camera->GetViewMatrix(), mariosModelMatrix);
+		vRenderer->SetModelMatrixPush(mariosModelMatrix);
 		vRenderer->Render();
 		break;
 

@@ -59,6 +59,18 @@ struct QueueFamilyIndices {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+    struct UniformBufferObject {
+        Matrix4 model;
+        Matrix4 view;
+        Matrix4 proj;
+        Vec4 lightPos[3];
+    };
+
+    struct ModelMatrixPushConst {
+        Matrix4 modelMatrix;
+        Matrix4 normalMatrix;
+    };
+
     struct Vertex {
         Vec3 pos;
         Vec3 normal;
@@ -111,14 +123,6 @@ struct QueueFamilyIndices {
         };
     }
 
- 
-struct UniformBufferObject {
-    Matrix4 model;
-    Matrix4 view;
-    Matrix4 proj;
-    Vec4 lightPos[3];
-};
-
 class VulkanRenderer : public Renderer {
 public:
     /// C11 precautions 
@@ -133,6 +137,7 @@ public:
     bool OnCreate();
     void OnDestroy();
     void Render();
+    void SetModelMatrixPush(const Matrix4& modelMatrix);
     void SetUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model);
     SDL_Window* GetWindow() { return window; }
     
@@ -212,6 +217,7 @@ private:
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void createCommandBuffers();
+    void recordCommandBuffer();
     void createSyncObjects();
     void cleanup();
     void cleanupSwapChain();
@@ -256,6 +262,7 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
     
     UniformBufferObject ubo;
+    ModelMatrixPushConst modelMatrixPushConst;
     
     
 
