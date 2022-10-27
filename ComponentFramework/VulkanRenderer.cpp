@@ -132,7 +132,7 @@ void VulkanRenderer::initVulkan() {
     createImageViews();
     createRenderPass();
     createDescriptorSetLayout();
-    createGraphicsPipeline();
+    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv");
     createCommandPool();
     createDepthResources();
     createFramebuffers();
@@ -238,7 +238,7 @@ void VulkanRenderer::recreateSwapChain() {
     createSwapChain();
     createImageViews();
     createRenderPass();
-    createGraphicsPipeline();
+    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv");
     createDepthResources();
     createFramebuffers();
     createUniformBuffers();
@@ -525,9 +525,9 @@ void VulkanRenderer::createDescriptorSetLayout() {
     }
 }
 
-void VulkanRenderer::createGraphicsPipeline() {
-    auto vertShaderCode = readFile("shaders/example27.vert.spv");
-    auto fragShaderCode = readFile("shaders/example27.frag.spv");
+void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* fFilename) {
+    auto vertShaderCode = readFile(vFilename);
+    auto fragShaderCode = readFile(fFilename);
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -926,13 +926,17 @@ void VulkanRenderer::loadModel(const char* filename) {
                 attrib.vertices[3 * index.vertex_index + 2]
             };
 
+            vertex.normal = {
+                attrib.normals[3 * index.normal_index + 0],
+                attrib.normals[3 * index.normal_index + 1],
+                attrib.normals[3 * index.normal_index + 2]
+            };
             
             vertex.texCoord = {
                 attrib.texcoords[2 * index.texcoord_index + 0],
                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
             };
 
-            vertex.color = { 1.0f, 1.0f, 1.0f };
 
             if (uniqueVertices.count(vertex) == 0) {
                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
@@ -1223,9 +1227,13 @@ void VulkanRenderer::createSyncObjects() {
 
 void VulkanRenderer::SetUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model) {
     ubo.proj = projection;
+    ubo.proj[5] *= -1.0f;
     ubo.view = view;
     ubo.model = model;
-    ubo.proj[5] *= -1.0f;
+
+    ubo.lightPos[0] = Vec4(-10.0f, 0.0f, 0.0f, 0.0f);
+    ubo.lightPos[1] = Vec4(0.0f, 0.0f, 10.0f, 0.0f);
+    ubo.lightPos[2] = Vec4(10.0f, 0.0f, 0.0f, 0.0f);
 }
 
 void VulkanRenderer::updateUniformBuffer(uint32_t currentImage) {
