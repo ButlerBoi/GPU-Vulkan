@@ -12,7 +12,12 @@ layout(binding = 0) uniform UniformBufferObject {
     vec4 lightPos[3];
 } ubo;
 
-layout (push_constant) uniform PushConstMatrix {
+layout(binding = 1) uniform GlobalLightingUBO{
+	vec4 position[3];
+	vec4 diffuse[3];
+} glighting;
+
+layout(push_constant) uniform PushConstMatrix {
     mat4 modelMatrix;
     mat4 normalMatrix;
 } pushConstMatrix;
@@ -33,9 +38,9 @@ void main() {
     vec3 vertDir = normalize(vertPos);
     eyeDir = -vertDir;
 
-    lightDir[0] = normalize(vec3(ubo.lightPos[0]) - vertPos);
-    lightDir[1] = normalize(vec3(ubo.lightPos[1]) - vertPos);
-    lightDir[2] = normalize(vec3(ubo.lightPos[2]) - vertPos);
+    lightDir[0] = normalize(vec3(glighting.position[0]) - vertPos);
+    lightDir[1] = normalize(vec3(glighting.position[1]) - vertPos);
+    lightDir[2] = normalize(vec3(glighting.position[2]) - vertPos);
     
     gl_Position = ubo.proj * ubo.view * pushConstMatrix.modelMatrix * vVertex;
 

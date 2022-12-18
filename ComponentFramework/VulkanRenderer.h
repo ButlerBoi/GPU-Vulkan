@@ -23,6 +23,8 @@
 #include "VMath.h"
 #include "MMath.h"
 #include "Hash.h"
+#include "GlobalLighting.h"
+
 using namespace MATH;
 
 
@@ -63,7 +65,6 @@ struct QueueFamilyIndices {
         Matrix4 model;
         Matrix4 view;
         Matrix4 proj;
-        Vec4 lightPos[3];
     };
 
     struct ModelMatrixPushConst {
@@ -123,6 +124,11 @@ struct QueueFamilyIndices {
         };
     }
 
+    struct BufferMemory {
+        VkBuffer bufferID;
+        VkDeviceMemory bufferMemoryID;
+    };
+
 class VulkanRenderer : public Renderer {
 public:
     /// C11 precautions 
@@ -139,6 +145,7 @@ public:
     void Render();
     void SetModelMatrixPush(const Matrix4& modelMatrix);
     void SetUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model);
+    void SetGLightsUBO(const GlobalLighting& glights);
     SDL_Window* GetWindow() { return window; }
     
 
@@ -173,8 +180,10 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<VkBuffer> cameraBuffers;
+    std::vector<VkBuffer> glightingBuffers;
+    std::vector<VkDeviceMemory> cameraBuffersMemory;
+    std::vector<VkDeviceMemory> glightingBuffersMemory;
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -193,7 +202,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void recreateSwapChain();
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateCameraUniformBuffer(uint32_t currentImage);
+    void updateGLightingUniformBuffer(uint32_t currentImage);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createRenderPass();
     void createDescriptorSetLayout();
@@ -211,7 +221,7 @@ private:
         /// A helper function for createVertexBuffer()
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void createIndexBuffer();
-    void createUniformBuffers();
+    void createUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffer, std::vector<VkDeviceMemory>& uniformBufferMemory);
     void createDescriptorPool();
     void createDescriptorSets();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
@@ -221,6 +231,7 @@ private:
     void createSyncObjects();
     void cleanup();
     void cleanupSwapChain();
+    void destroyUniformBuffer(std::vector<VkBuffer>& uniformBuffer, std::vector<VkDeviceMemory>& uniformBufferMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
@@ -262,10 +273,9 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
     
     UniformBufferObject ubo;
-    ModelMatrixPushConst modelMatrixPushConst;
+    GlobalLighting glightingUBO;
+    ModelMatrixPushConst modelMatrixPushConst[3];
     
-    
-
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
