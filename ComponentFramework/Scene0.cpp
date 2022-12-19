@@ -29,12 +29,12 @@ bool Scene0::OnCreate() {
 		aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 		camera->Perspective(45.0f, aspectRatio, 0.5f, 20.0f);
 		camera->LookAt(Vec3(0.0f, 0.0f, 5.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
-		globalLighting.position[0] = Vec4(5.0f, 0.0f, -3.0f, 0.0f);
+		globalLighting.position[0] = Vec4(10.0f, 0.0f, 0.0f, 0.0f);
 		globalLighting.position[1] = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-		globalLighting.position[2] = Vec4(-5.0f, 0.0f, 0.0f, 0.0f);
+		globalLighting.position[2] = Vec4(-10.0f, 0.0f, 0.0f, 0.0f);
 		globalLighting.diffuse[0] = Vec4(0.0f, 0.1f, 0.0f, 1.0f);
-		globalLighting.diffuse[1] = Vec4(0.0f, 0.1f, 0.0f, 1.0f);
-		globalLighting.diffuse[2] = Vec4(0.0f, 0.1f, 0.0f, 1.0f);
+		globalLighting.diffuse[1] = Vec4(0.1f, 0.0f, 0.0f, 1.0f);
+		globalLighting.diffuse[2] = Vec4(0.0f, 0.0f, 0.1f, 1.0f);
 		break;
 
 	case RendererType::OPENGL:

@@ -180,6 +180,14 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
 
+    struct Sampler2D_Data {
+        VkImage textureImage;
+        VkDeviceMemory textureImageMemory;
+        VkImageView textureImageView;
+        VkSampler textureSampler;
+    };
+    Sampler2D_Data textures[2];
+
     std::vector<VkBuffer> cameraBuffers;
     std::vector<VkBuffer> glightingBuffers;
     std::vector<VkDeviceMemory> cameraBuffersMemory;
@@ -207,13 +215,13 @@ private:
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createRenderPass();
     void createDescriptorSetLayout();
-    void createGraphicsPipeline(const char* vFilename, const char* fFilename);
+    void createGraphicsPipeline(const char* vFilename, const char* fFilename, const char* gFilename);
     void createFramebuffers();
     void createCommandPool();
     void createDepthResources();
-    void createTextureImage(const char* filename);
-    void createTextureImageView();
-    void createTextureSampler();
+    void createTextureImage(const char* filename, Sampler2D_Data &textureData);
+    void createTextureImageView(Sampler2D_Data& textureData);
+    void createTextureSampler(Sampler2D_Data& textureData);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void loadModel(const char* filename);
@@ -223,7 +231,7 @@ private:
     void createIndexBuffer();
     void createUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffer, std::vector<VkDeviceMemory>& uniformBufferMemory);
     void createDescriptorPool();
-    void createDescriptorSets();
+    void createDescriptorSets(Sampler2D_Data& textureData);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void createCommandBuffers();
@@ -256,12 +264,6 @@ private:
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
