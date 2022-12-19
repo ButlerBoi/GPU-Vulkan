@@ -5,17 +5,15 @@
 layout(location = 0) in vec4 vVertex;
 layout(location = 1) in vec3 vNormal;
 
-layout(std140, binding = 0) uniform UniformBufferObject {
-    mat4 model;
+layout (std140, binding = 0) uniform CameraMatricies {
+    mat4 projection;
     mat4 view;
-    mat4 proj;
-    vec4 lightPos[3];
-} ubo;
+};
 
-layout(push_constant) uniform PushConstMatrix {
-    mat4 modelMatrix;
-    mat4 normalMatrix;
-} pushConstMatrix;
+layout(push_constant) uniform Push {
+	mat4 modelMatrix;
+	mat4 normalMatrix;
+} push;
 
 
 layout (location = 0) out VertexStage {
@@ -25,8 +23,6 @@ layout (location = 0) out VertexStage {
 
 
 void main() {
-
-
-    gl_Position = ubo.view * pushConstMatrix.modelMatrix * vVertex;
-    vs_out.normal = mat3(pushConstMatrix.normalMatrix) * vNormal;
+    gl_Position = view * push.modelMatrix * vVertex;
+    vs_out.normal = mat3(push.normalMatrix) * vNormal;
 }

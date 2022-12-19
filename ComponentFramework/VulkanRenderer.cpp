@@ -133,8 +133,8 @@ void VulkanRenderer::initVulkan() {
     createImageViews();
     createRenderPass();
     createDescriptorSetLayout();
-    //createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", "shaders/drawNormals.geom.spv");
-    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", nullptr);
+    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", "shaders/drawNormals.geom.spv");
+    //createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", nullptr);
     createCommandPool();
     createDepthResources();
     createFramebuffers();
@@ -244,14 +244,14 @@ void VulkanRenderer::recreateSwapChain() {
     createSwapChain();
     createImageViews();
     createRenderPass();
-    //createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", "shaders/drawNormals.geom.spv");
-    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", nullptr);
+    createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", "shaders/drawNormals.geom.spv");
+    //createGraphicsPipeline("shaders/phong.vert.spv", "shaders/phong.frag.spv", nullptr);
     createDepthResources();
     createFramebuffers();
     createUniformBuffers(sizeof(UniformBufferObject), cameraBuffers, cameraBuffersMemory);
     createUniformBuffers(sizeof(GlobalLighting), glightingBuffers, glightingBuffersMemory);
     createDescriptorPool();
-    createDescriptorSets(textures[2]);
+    createDescriptorSets(textures[0]);
     createCommandBuffers();
 }
 
@@ -513,7 +513,7 @@ void VulkanRenderer::createDescriptorSetLayout() {
     cameraBinding.descriptorCount = 1;
     cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     cameraBinding.pImmutableSamplers = nullptr;
-    cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
 
     VkDescriptorSetLayoutBinding gLightingBinding{};
     gLightingBinding.binding = 1;
@@ -541,37 +541,43 @@ void VulkanRenderer::createDescriptorSetLayout() {
 }
 
 void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* fFilename, const char* gFilename) {
+
+    VkShaderModule geomShaderModule;
+    geomShaderModule = 0;
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
     auto vertShaderCode = readFile(vFilename);
     auto fragShaderCode = readFile(fFilename);
-  //  auto geomShaderCode = readFile(gFilename);
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
-   // VkShaderModule geomShaderModule = createShaderModule(geomShaderCode);
-
-    if (gFilename != nullptr) {
-
-    }
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main";
+    shaderStages.push_back(vertShaderStageInfo);
 
     VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
+    shaderStages.push_back(fragShaderStageInfo);
 
-   /* VkPipelineShaderStageCreateInfo geomShaderStageInfo{};
-    geomShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    geomShaderStageInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-    geomShaderStageInfo.module = geomShaderModule;
-    geomShaderStageInfo.pName = "main";*/
+    if (gFilename != nullptr) {
+        auto geomShaderCode = readFile(gFilename);
+        VkShaderModule geomShaderModule = createShaderModule(geomShaderCode);
 
-    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo }; // , geomShaderStageInfo
+        VkPipelineShaderStageCreateInfo geomShaderStageInfo{};
+        geomShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        geomShaderStageInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+        geomShaderStageInfo.module = geomShaderModule;
+        geomShaderStageInfo.pName = "main";
+        shaderStages.push_back(geomShaderStageInfo);
+    }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -664,8 +670,8 @@ void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* f
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2; //3 for Geom
-    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
@@ -684,6 +690,7 @@ void VulkanRenderer::createGraphicsPipeline(const char* vFilename, const char* f
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(device, geomShaderModule, nullptr);
 }
 
 void VulkanRenderer::createFramebuffers() {
